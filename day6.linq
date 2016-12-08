@@ -35,12 +35,10 @@ public string GetResult1(IEnumerable<string> input)
         }
     }
 
-    //dicts.Dump();
-    // Find the most frequent letter for each position
     var chars = new List<char>();
     foreach (var col in cols)
     {
-        var ch = col.GroupBy(c => c).OrderByDescending(g => g.Count()).Select(g => new { Key = g.Key, Count = g.Count() }).First().Key;
+        var ch = col.GroupBy(c => c).OrderBy(g => g.Count()).Select(g => new { Key = g.Key, Count = g.Count() }).First().Key;
         //ch.Dump();
         chars.Add(ch);
     }
