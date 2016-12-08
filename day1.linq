@@ -1,4 +1,6 @@
-<Query Kind="Program" />
+<Query Kind="Program">
+  <Namespace>System.Drawing</Namespace>
+</Query>
 
 void Main()
 {
@@ -21,9 +23,12 @@ void Main()
 	input = GetInput();
 	result = GetFinalPosition(input);
 	result.Dump("Main");
+
+    result = GetFinalPosition(input, true);
+    result.Dump("Main 2");
 }
 
-public int GetFinalPosition(string input)
+public int GetFinalPosition(string input, bool stopAfterSecondVisit = false)
 {
 	var directions = input.Split(',').Select(x => x.Trim()).ToList();
 	//directions.Dump();
@@ -31,7 +36,9 @@ public int GetFinalPosition(string input)
 	var current = new Position();
 	foreach (var direction in directions)
 	{
-		current.Move(direction);
+		current.Move(direction, stopAfterSecondVisit);
+        if (current.FoundIt)
+            break;
 	}
 	return current.DistanceFromOrigin;
 }
@@ -56,7 +63,7 @@ public string GetInput()
 	return "R3, R1, R4, L4, R3, R1, R1, L3, L5, L5, L3, R1, R4, L2, L1, R3, L3, R2, R1, R1, L5, L2, L1, R2, L4, R1, L2, L4, R2, R2, L2, L4, L3, R1, R4, R3, L1, R1, L5, R4, L2, R185, L2, R4, R49, L3, L4, R5, R1, R1, L1, L1, R2, L1, L4, R4, R5, R4, L3, L5, R1, R71, L1, R1, R186, L5, L2, R5, R4, R1, L5, L2, R3, R2, R5, R5, R4, R1, R4, R2, L1, R4, L1, L4, L5, L4, R4, R5, R1, L2, L4, L1, L5, L3, L5, R2, L5, R4, L4, R3, R3, R1, R4, L1, L2, R2, L1, R4, R2, R2, R5, R2, R5, L1, R1, L4, R5, R4, R2, R4, L5, R3, R2, R5, R3, L3, L5, L4, L3, L2, L2, R3, R2, L1, L1, L5, R1, L3, R3, R4, R5, L3, L5, R1, L3, L5, L5, L2, R1, L3, L1, L3, R4, L1, R3, L2, L2, R3, R3, R4, R4, R1, L4, R1, L5";
 }
 
-public enum Facing
+public enum CompassDirection
 {
 	North,
 	East,
@@ -66,42 +73,42 @@ public enum Facing
 
 public static class FacingExtensions
 {
-	public static Facing Turn(this Facing current, string direction)
+	public static CompassDirection Turn(this CompassDirection current, string direction)
 	{
 		return (direction.ToUpper() == "L") ? current.TurnLeft() : current.TurnRight();		
 	}
 	
-	public static Facing TurnLeft(this Facing current)
+	public static CompassDirection TurnLeft(this CompassDirection current)
 	{
 		switch (current)
 		{
-			case Facing.North:
-				return Facing.West;
-			case Facing.East:
-				return Facing.North;
-			case Facing.South:
-				return Facing.East;
-			case Facing.West:
-				return Facing.South;
+			case CompassDirection.North:
+				return CompassDirection.West;
+			case CompassDirection.East:
+				return CompassDirection.North;
+			case CompassDirection.South:
+				return CompassDirection.East;
+			case CompassDirection.West:
+				return CompassDirection.South;
 			default:
-				return Facing.North;
+				return CompassDirection.North;
 		}
 	}
 
-	public static Facing TurnRight(this Facing current)
+	public static CompassDirection TurnRight(this CompassDirection current)
 	{
 		switch (current)
 		{
-			case Facing.North:
-				return Facing.East;
-			case Facing.East:
-				return Facing.South;
-			case Facing.South:
-				return Facing.West;
-			case Facing.West:
-				return Facing.North;
+			case CompassDirection.North:
+				return CompassDirection.East;
+			case CompassDirection.East:
+				return CompassDirection.South;
+			case CompassDirection.South:
+				return CompassDirection.West;
+			case CompassDirection.West:
+				return CompassDirection.North;
 			default:
-				return Facing.North;
+				return CompassDirection.North;
 		}
 	}
 }
@@ -110,35 +117,43 @@ public class Position
 {
 	private int x = 0;
 	private int y = 0;
-	private Facing facing = Facing.North;
+    private bool foundIt = false;
+	private CompassDirection facing = CompassDirection.North;
+    private List<Point> visited = new List<Point>();
 
-	public void Move(string instruction)
+	public void Move(string instruction, bool stopAfterSecondVisit)
 	{
-		var dir = instruction[0];
-		var goleft = dir == 'L';
+        if (stopAfterSecondVisit && foundIt)
+            return;
+            
+		var dir = instruction[0].ToString();
+        var newdirection = facing.Turn(dir);
 		var distance = int.Parse(instruction.Substring(1));
 
-		switch (facing)
-		{
-			case Facing.North:
-				x += distance * (goleft ? -1 : 1);
-				break;
-			case Facing.East:
-				y += distance * (goleft ? 1 : -1);
-				break;
-			case Facing.South:
-				x += distance * (goleft ? 1 : -1);
-				break;
-			case Facing.West:
-				y += distance * (goleft ? -1 : 1);
-				break;
-			default:
-				break;
-		}
-		facing = facing.Turn(dir.ToString());
+        for (int step = 1; step <= distance; step++)
+        {
+            x += (newdirection == CompassDirection.North) ? 1 : (newdirection == CompassDirection.South) ? -1 : 0;
+            y += (newdirection == CompassDirection.East) ? 1 : (newdirection == CompassDirection.West) ? -1 : 0;
+
+            if (stopAfterSecondVisit)
+            {
+                Point here = new Point(x, y);
+                if (visited.IndexOf(here) >= 0)
+                {
+                    // We're here
+                    foundIt = true;
+                    break;
+                }
+                visited.Add(here);
+            }
+        }
+        
+		facing = newdirection;
 		$"Moved {instruction}. New location x={x}; y={y}".Dump();
 	}
 
+    public bool FoundIt { get { return foundIt; } }
+    
 	public int DistanceFromOrigin
 	{
 		get
