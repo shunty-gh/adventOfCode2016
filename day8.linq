@@ -96,7 +96,7 @@ public class AoCGrid
 
 	public void ApplyCommand(AoCCommand command)
 	{
-		command.Dump();
+		//command.Dump();
 		switch (command.CommandType)
 		{
 			case AoCCommandType.Rect:
@@ -212,8 +212,10 @@ public class AoCGrid
 		for (var rowindex = 0; rowindex < _height; rowindex++)
 		{
 			for (var colindex = 0; colindex < _width; colindex++)
-			{
-				Console.Write(cells[(rowindex * _width) + colindex] == true ? "1" : "0");
+            {
+                if ((colindex % 5) == 0)
+                {
+                }
             }
 			Console.WriteLine();
         }
