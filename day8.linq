@@ -215,7 +215,9 @@ public class AoCGrid
             {
                 if ((colindex % 5) == 0)
                 {
+                    Console.Write("   ");
                 }
+				Console.Write(cells[(rowindex * _width) + colindex] == true ? "8" : "_");
             }
 			Console.WriteLine();
         }
