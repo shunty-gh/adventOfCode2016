@@ -1,6 +1,7 @@
 <Query Kind="Program" />
 
 //#define TEST
+//#define TEST2
 
 void Main()
 {
@@ -12,24 +13,31 @@ void Main()
 	result.Dump("Result 1");
 #if TEST	
     System.Diagnostics.Debug.Assert(57 == result, "Test result is wrong.");
+#elif TEST2
+    System.Diagnostics.Debug.Assert(242394 == result, "Test result is wrong.");
 #endif
 }
 
-public int GetResult(IEnumerable<string> input)
+public Int64 GetResult(IEnumerable<string> input)
 {
+    bool usev2 = true;
 #if TEST
-    var expects = new List<string> { "ADVENT", "ABBBBBC", "XYZXYZXYZ", "ABCBCDEFEFG", "(1x3)A", "X(3x3)ABC(3x3)ABCY" };
+    usev2 = false;
+    var expects = new List<int> { 6, 7, 9, 11, 6, 18 };
+    int index = 0;
+#elif TEST2
+    var expects = new List<int> { 9, 20, 241920, 445 };
     int index = 0;
 #endif
-    int result = 0;
+    Int64 result = 0;
 	foreach (var line in input)
 	{
-        string dl = DecompressLine(line);
-        result += dl.Length;
-#if TEST
+        var dl = DecompressChunk(line, usev2);
+        result += dl;
+#if TEST || TEST2
         var expect = expects[index++];
-        dl.Dump();
-        System.Diagnostics.Debug.Assert(expect == dl, $"Test result is wrong. Expected \"{expect}\" but got \"{dl}\"");
+        var r = dl;
+        System.Diagnostics.Debug.Assert(expect == r, $"Test result is wrong. Expected \"{expect}\" but got \"{r}\"");
 #endif
     }
     return result;
@@ -38,25 +46,29 @@ public int GetResult(IEnumerable<string> input)
 public static string marker_pattern = @"\((?<len>[0-9]+)x(?<rep>[0-9]+)\)";
 public Regex re = new Regex(marker_pattern);
 
-public string DecompressLine(string source)
+public Int64 DecompressChunk(string source, bool useV2)
 {
-    StringBuilder sb = new StringBuilder();
+    Int64 result = 0;
     int index = 0;
     var match = re.Match(source, index);
     while (match.Success)
     {
-        //match.Dump();
         if (match.Index > 0)
         {
-            sb.Append(source.Substring(index, match.Index - index));
+            result += match.Index - index;
         }
 
         int len = int.Parse(match.Groups["len"].Value);
         int rep = int.Parse(match.Groups["rep"].Value);
         var sub = source.Substring(match.Index + match.Length, len);
-        for (int subcount = 0; subcount < rep; subcount++)
+        if (useV2)
         {
-            sb.Append(sub);
+            Int64 r = DecompressChunk(sub, true);
+            result += r * rep;
+        }
+        else
+        {
+            result += (sub.Length * rep);
         }
         
         index = match.Index + match.Length + len;
@@ -65,10 +77,8 @@ public string DecompressLine(string source)
         match = re.Match(source, index);
     }
 
-    if (index < source.Length)
-        sb.Append(source.Substring(index));
-
-    return sb.ToString();
+    result += source.Length - index;
+    return result;
 }
 
 public IEnumerable<string> GetInput()
@@ -83,7 +93,15 @@ public IEnumerable<string> GetInput()
 		"(6x1)(1x3)A",
         "X(8x2)(3x3)ABCY"
 	};
-#else
+#elif TEST2
+    var result = new List<string>
+    {
+        "(3x3)XYZ",
+        "X(8x2)(3x3)ABCY",
+        "(27x12)(20x12)(13x14)(7x10)(1x12)A",
+        "(25x3)(3x3)ABC(2x3)XY(5x2)PQRSTX(18x9)(3x2)TWO(5x7)SEVEN"
+    };
+#else 
 	string fname = Path.Combine(
         Path.GetDirectoryName(Util.CurrentQueryPath), 
         Path.GetFileNameWithoutExtension(Util.CurrentQueryPath) + "-input.txt");
