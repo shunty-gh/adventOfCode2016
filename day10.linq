@@ -1,6 +1,6 @@
 <Query Kind="Program" />
 
-#define TEST
+//#define TEST
 
 void Main()
 {
@@ -9,10 +9,9 @@ void Main()
 	// http://adventofcode.com/2016/day/10
     var input = GetInput();
 	var result = GetResult(input);
-	result.Dump("Result 1");
-#if TEST	
-    System.Diagnostics.Debug.Assert(999 == result, "Test result is wrong.");
-#endif
+    result = (outputs[0].First() * outputs[1].First() * outputs[2].First());
+    BigBot.Dump("Bot Id");
+    result.Dump("Result 1");
 }
 
 public static string init_pattern = @"value (?<num>\d*) goes to bot (?<botid>\d*)";
@@ -49,6 +48,7 @@ public Int64 GetResult(IEnumerable<string> input)
     var inits = input.Where(l => l.StartsWith("value"));
     var instructions = input.Where(l => l.StartsWith("bot"));
 
+    // Load instructions
     foreach (var line in instructions)
     {
         var inst = ParseBotInstruction(line);
@@ -62,12 +62,13 @@ public Int64 GetResult(IEnumerable<string> input)
         InitializeBot(inst);
     }
 
-    bots.Dump();
-    outputs.Dump();
+    //bots.Dump();
+    //outputs.Dump();
 
     return result;
 }
 
+public int BigBot = 0; // A lovely global to handle the id of the bot that compares the required chips
 public Dictionary<int, Bot> bots = new Dictionary<int, Bot>();
 public Dictionary<int, List<int>> outputs = new Dictionary<int, List<int>>();
 
@@ -87,25 +88,34 @@ public Bot GetOrCreateBot(int id)
         var bot = new Bot(id);
         bot.OnReceivedChip += (sender, args) =>
         {
+            Console.WriteLine($"Bot {args.BotId} received chip {args.Chip}");
             var b = (Bot)sender;
 #if TEST            
             if ((b.Low == 2) && (b.High == 5))
             {
-                Console.WriteLine($"Bot {b.Id} compares value-2 and value-5 chips");
+                Console.WriteLine($"Bot {args.BotId} compares value-2 and value-5 chips");
             }
-            Console.WriteLine($"Bot {b.Id} received chip {args.Chip}");
 #else
             if ((b.Low == 17) && (b.High == 61))
             {
-                Console.WriteLine($"Bot {b.Id} compares value-17 and value-61 chips");
+                BigBot = args.BotId;
+                Console.WriteLine($"Bot {args.BotId} compares value-17 and value-61 chips");
             }
 #endif       
         };
         bot.OnHasTwoChips += (sender, args) =>
         {
+            // NB!! Totally NOT thread-safe - but doesn't matter 'cos only 1 instruction per bot and instruction list never gets added to
+            
             // Find an instruction for this bot and apply it
-            if (BotInstructions.ContainsKey(
-            var instruction = 
+            if (BotInstructions.ContainsKey(args.BotId))
+            {
+                var instruction = BotInstructions[args.BotId];
+                ApplyBotInstruction(instruction);
+                
+                // Remove it
+                BotInstructions.Remove(args.BotId);
+            }
         };
         bots.Add(id, bot);
         return bot;
