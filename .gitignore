@@ -1,0 +1,15 @@
+*.exe
+*.ilk
+*.pdb
+*.obj
+a.out
+
+.vs/
+.vscode/tags
+target/
+bin/
+**/debug
+obj/
+*.nuget.*
+
+appsettings.private.json

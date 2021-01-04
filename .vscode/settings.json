@@ -1,0 +1,12 @@
+{
+    "files.associations": {
+        "*.txt": "plaintext",
+        "xiosbase": "cpp"
+    },
+    "files.exclude": {
+        "*.exe": true,
+        "*.obj": true,
+        "*.ilk": true,
+        "*.pdb": true
+    }
+}
