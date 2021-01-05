@@ -8,16 +8,35 @@
 #include <queue>
 #include <algorithm>
 #include <map>
+#include <functional>
 
-struct Generator {
-    int floor;
-    int nameId;
-    std::string name;
-};
 
-struct Microchip {
+/* ***
+ AoC 2016 - Day 11: Radioisotope Thermoelectric Generators
+ The state of each floor is held as an int - technically we could use 16 bit int.
+ Each generator and each microchip takes one bit. The lower 8 bits represent microchips
+ and the higher 8 bits represent generators. For a microchip at bit k the matching
+ generator will be bit k << 8. eg if we set the polonium microchip to be the
+ value 1 (ie bit 0) then a polonium generator on the same floor will be indicated
+ by bit 9 being set.
+ To "move" an item from one floor to another we *unset* the appropriate state bit
+ on the existing floor and *set* the state bit on the new floor.
+   x & ~(1 << i) => unset the bit at position i
+   x | (1 << i)  => set the bit at position i
+
+ There are two options here - use a priority queue or just a normal queue.
+ Comment/uncommment the #define line below as appropriate.
+ It seems, in this case, that the normal queue is significantly quicker. This could
+ well be to do with my sub-par implementation or it could be to do with the fact that
+ there are only 4 floors and a small number of items so the priorities are mostly
+ the same.
+
+* ***  */
+
+//#define PRIORITY_QUEUE
+
+struct Component {
     int floor;
-    int nameId;
     std::string name;
 };
 
@@ -27,8 +46,11 @@ struct State {
 };
 
 struct StateToVisit {
-    State State;
+    State ThisState;
     int Moves;
+#ifdef PRIORITY_QUEUE
+    int fScore;
+#endif
 };
 
 bool operator<(const State& s1, const State& s2) {
@@ -72,19 +94,14 @@ bool is_stable(int state) {
     return true;
 }
 
-int index_of_name(std::vector<std::string>& haystack, std::string needle) {
-    // find index of supplied string in the supplied vector
-    // if the name doesn't exist then add it
-    auto it = std::find(haystack.begin(), haystack.end(), needle);
-    int result;
-    if (it != haystack.end()) {
-         result = std::distance(haystack.begin(), it);
-    } else {
-        haystack.push_back(needle);
-        result = haystack.size() - 1;
+State get_initial_state(std::vector<Component>& generators, std::vector<Component>& microchips) {
+    // convert generators and chips to ints. Lo 8 bits = chips; Hi 8 bits = generators
+    State result{0, {0,0,0,0}};
+    for (int i = 0; i < generators.size(); i++) {
+        result.FloorState[generators[i].floor - 1] |= (1 << 8 << i);
+        result.FloorState[microchips[i].floor - 1] |= (1 << i);
     }
     return result;
-
 }
 
 int step_count(const State& initialState, const State& targetState);
@@ -94,121 +111,128 @@ int main() {
     std::fstream inputfile("day11-input.txt", std::ios_base::in);
     //std::fstream inputfile("day11-input-test.txt", std::ios_base::in);
     std::string line;
-    int i = 0;
-    std::vector<std::string> names{};
-    std::vector<Generator> generators{};
-    std::vector<Microchip> microchips{};
+    int floor = 0;
+    std::vector<Component> generators{};
+    std::vector<Component> microchips{};
     while (std::getline(inputfile, line)) {
-        ++i;
-        auto trimmed = line.substr(line.find("contains") + 9);
-        if (trimmed.find("nothing relevant.") == 0) {
-            //std::cout << "Floor " << i << " is empty" << std::endl;
-            continue;
-        }
+        ++floor; // the input contains floors in proper order
+
         // Find generators. Scan the line, find "generator" select the previous word to get the name.
-        int gstart = 0;
-        int gpos = trimmed.find("generator", gstart);
+        int gpos = line.find("generator", 0);
         while (gpos >= 0) {
-            gstart = gpos + 1;
-            int spos = trimmed.rfind(" ", gpos - 2);
-            std::string gen = trimmed.substr(spos + 1, gpos - spos - 2);
-            //std::cout << "Found" << gen << " generator on floor " << i << std::endl;
-            int nameidx = index_of_name(names, gen);
-            Generator g{i, nameidx, gen};
+            int spos = line.rfind(" ", gpos - 2);
+            std::string gen = line.substr(spos + 1, gpos - spos - 2);
+            Component g{floor, gen};
             generators.push_back(g);
 
             // next generator
-            gpos = trimmed.find("generator", gstart);
+            gpos = line.find("generator", gpos + 1);
         }
 
         // Find microchips. Scan the line etc etc
-        int mstart = 0;
-        int mpos = trimmed.find("microchip", mstart);
+        int mpos = line.find("microchip", 0);
         while (mpos >= 0) {
-            mstart = mpos + 1;
-            int spos = trimmed.rfind(" ", mpos - 2);
-            std::string mc = trimmed.substr(spos + 1, trimmed.find("-", spos) - spos - 1);
-            //std::cout << "Found" << mc << " microchip on floor " << i << std::endl;
-
-            int nameidx = index_of_name(names, mc);
-            Microchip m{i, nameidx, mc};
+            int spos = line.rfind(" ", mpos - 2);
+            std::string mc = line.substr(spos + 1, line.find("-", spos) - spos - 1);
+            Component m{floor, mc};
             microchips.push_back(m);
 
             // next chip
-            mpos = trimmed.find("microchip", mstart);
+            mpos = line.find("microchip", mpos + 1);
         }
     }
     inputfile.close();
+    // sort generators and microchips by name so that the indexes match
+    std::sort(generators.begin(), generators.end(), [](Component& a, Component& b) { return a.name < b.name; });
+    std::sort(microchips.begin(), microchips.end(), [](Component& a, Component& b) { return a.name < b.name; });
 
-    State initialState{0, {0,0,0,0}};
-    // convert generators and chips to ints. Lo 8 bits = chips; Hi 8 bits = generators
-    int allItemsState = 0;
-    for (int i = 0; i < generators.size(); i++) {
-        auto gen = generators[i];
-        auto mc = microchips[i];
-        initialState.FloorState[gen.floor - 1] |= (1 << 8 << gen.nameId);
-        initialState.FloorState[mc.floor - 1] |= (1 << mc.nameId);
+    auto begin = std::chrono::high_resolution_clock::now();
 
-        allItemsState |= (1 << i);
-        allItemsState |= (1 << 8 << i);
-    }
-    State targetState{3, {0,0,0,allItemsState}};
-
-    // check all appears to be correct
-    for (int i = 0; i < 4; i++) {
-        if (!is_stable(initialState.FloorState[i])) {
-            std::cout << "ERROR: Floor " << i + 1 << " is unstable" << std::endl;
-        }
-    }
+    //
+    // *** Part 1
+    //
+    State initialState = get_initial_state(generators, microchips);
+    int allbits = (1 << generators.size()) - 1;
+    State targetState{3, {0,0,0, allbits | (allbits << 8)}};
 
     int part1 = step_count(initialState, targetState);
     std::cout << "Part 1: " << part1 << std::endl;
 
+    //
+    // *** Part 2 ***
+    //
     // Add extra generators and chips for part 2
-    int idx = names.size();
-    generators.push_back(Generator{1, idx, "elerium"});
-    microchips.push_back(Microchip{1, idx++, "elerium"});
-    generators.push_back(Generator{1, idx, "dilithium"});
-    microchips.push_back(Microchip{1, idx++, "dilithium"});
+    generators.push_back(Component{1, "elerium"});
+    microchips.push_back(Component{1, "elerium"});
+    generators.push_back(Component{1, "dilithium"});
+    microchips.push_back(Component{1, "dilithium"});
 
     // rebuild initial and target states
-    State initialState2{0, {0,0,0,0}};
-    int allItemsState2 = 0;
-    for (int i = 0; i < generators.size(); i++) {
-        auto gen = generators[i];
-        auto mc = microchips[i];
-        initialState2.FloorState[gen.floor - 1] |= (1 << 8 << gen.nameId);
-        initialState2.FloorState[mc.floor - 1] |= (1 << mc.nameId);
+    initialState = get_initial_state(generators, microchips);
+    allbits = (1 << generators.size()) - 1;
+    targetState = State{3, {0,0,0, allbits | (allbits << 8)}};
 
-        allItemsState2 |= (1 << i);
-        allItemsState2 |= (1 << 8 << i);
-    }
-    State targetState2{3, {0,0,0,allItemsState2}};
-
-    int part2 = step_count(initialState2, targetState2);
+    int part2 = step_count(initialState, targetState);
     std::cout << "Part 2: " << part2 << std::endl;
+
+    auto end = std::chrono::high_resolution_clock::now();
+    std::cout << "Elapsed: " << std::chrono::duration_cast<std::chrono::milliseconds>(end-begin).count() << "ms" << std::endl;
 }
 
+#ifdef PRIORITY_QUEUE
+int calculate_heuristic(const State& current) {
+    // Estimate minimum cost of moving all items up to fourth floor
+    int result = 0;
+    for (int i = 0; i < 3; i++) {
+        // Get bit count for this floor
+        int bc = 0;
+        int fs = current.FloorState[i];
+        while (fs > 0) {
+            if ((fs & 1) == 1) {
+                bc++;
+            }
+            fs = fs >> 1;
+        }
+        result += (bc * (3 - i));
+    }
+    return result / 2; // We can move up to 2 items at once
+}
+
+// Comparison function for the StateToVisit priority queue
+bool compare_state_to_visit(StateToVisit s1, StateToVisit s2) {
+    // We want *lower* values to be at the top
+    // ie the opposite of the normal priority_queue order
+    //return s1.Moves > s2.Moves;
+    return s1.fScore > s2.fScore;
+}
+
+//typedef std::priority_queue<StateToVisit, std::vector<StateToVisit>, decltype(&compare_state_to_visit)> stv_queue;
+typedef std::priority_queue<StateToVisit, std::vector<StateToVisit>,  std::function<bool(StateToVisit, StateToVisit)>> stv_queue;
+#endif
+
 int step_count(const State& initialState, const State& targetState) {
-    std::map<State,int> visited;
+    std::map<State,int> seen;
+#ifdef PRIORITY_QUEUE
+    stv_queue tovisit(compare_state_to_visit);
+#else
     std::queue<StateToVisit> tovisit;
+#endif
     StateToVisit currentSTV;
     State current;
     tovisit.push(StateToVisit{initialState,0});
-    visited[initialState] = 0;
+    seen[initialState] = 0;
     while (!tovisit.empty()) {
+#ifdef PRIORITY_QUEUE
+        currentSTV = tovisit.top();
+#else
         currentSTV = tovisit.front();
-        current = currentSTV.State;
+#endif
+        current = currentSTV.ThisState;
         tovisit.pop();
 
-        auto itc = visited.find(current);
-        if (itc != visited.end() && itc->second > currentSTV.Moves) {
+        auto itc = seen.find(current);
+        if (itc != seen.end() && itc->second > currentSTV.Moves) {
             continue;
-        }
-
-        if (current == targetState) {
-            // Done it
-            std::cout << "Complete in " << currentSTV.Moves << " moves" << std::endl;
         }
 
         // Where can we go from here. Up or down 1 floor...
@@ -235,14 +259,18 @@ int step_count(const State& initialState, const State& targetState) {
                         ns.FloorState[nextFloor] = s2;
 
                         if (ns == targetState) {
-                            std::cout << "Complete in " << currentSTV.Moves + 1 << " moves" << std::endl;
+                            //std::cout << "Complete in " << currentSTV.Moves + 1 << " moves" << std::endl;
                             return currentSTV.Moves + 1;
                         }
 
-                        auto it = visited.find(ns);
-                        if (it == visited.end() || it->second > currentSTV.Moves + 2) {
+                        auto it = seen.find(ns);
+                        if (it == seen.end() || it->second > currentSTV.Moves + 2) {
+#ifdef PRIORITY_QUEUE
+                            tovisit.push(StateToVisit{ns, currentSTV.Moves + 1, currentSTV.Moves + 1 + calculate_heuristic(ns)});
+#else
                             tovisit.push(StateToVisit{ns, currentSTV.Moves + 1});
-                            visited[ns] = currentSTV.Moves + 1;
+#endif
+                            seen[ns] = currentSTV.Moves + 1;
                         }
                     }
 
@@ -259,22 +287,25 @@ int step_count(const State& initialState, const State& targetState) {
                                 ns.FloorState[nextFloor] = s4;
 
                                 if (ns == targetState) {
-                                    std::cout << "Complete in " << currentSTV.Moves + 1 << " moves" << std::endl;
+                                    //std::cout << "Complete in " << currentSTV.Moves + 1 << " moves" << std::endl;
                                     return currentSTV.Moves + 1;
                                 }
 
-                                auto it = visited.find(ns);
-                                if (it == visited.end() || it->second > currentSTV.Moves + 2) {
+                                auto it = seen.find(ns);
+                                if (it == seen.end() || it->second > currentSTV.Moves + 2) {
+#ifdef PRIORITY_QUEUE
+                                    tovisit.push(StateToVisit{ns, currentSTV.Moves + 1, currentSTV.Moves + 1 + calculate_heuristic(ns)});
+#else
                                     tovisit.push(StateToVisit{ns, currentSTV.Moves + 1});
-                                    visited[ns] = currentSTV.Moves + 1;
+#endif
+                                    seen[ns] = currentSTV.Moves + 1;
                                 }
                             }
                         }
                     }
                 }
-
             }
         }
     }
-    return -1;
+    return -1; // failed to complete
 }
