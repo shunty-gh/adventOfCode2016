@@ -10,6 +10,7 @@
                 "/Fe:",
                 "${fileDirname}\\${fileBasenameNoExtension}.exe",
                 "${file}"
+                //, "md5.cpp" // Need md5 for Day 14
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
