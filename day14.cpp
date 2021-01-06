@@ -21,12 +21,10 @@ const int Part2ExtraHashCount = 2016;
 struct HashInfo {
     int hashIndex;
     int matchIndex;
-    std::string hash;
     char tripleChar;
     std::vector<char> fives;
 
-    HashInfo() { hashIndex = 0; matchIndex = 0; hash = ""; tripleChar = ' '; fives = std::vector<char>{}; }
-    HashInfo(int index, std::string hash1 ) { hashIndex = index; matchIndex = 0; hash = hash1; tripleChar = ' '; fives = std::vector<char>{}; }
+     HashInfo(int index) { hashIndex = index; matchIndex = 0; tripleChar = ' '; fives = std::vector<char>{}; }
 };
 
 bool operator<(const HashInfo& h1, const HashInfo& h2) {
@@ -100,12 +98,13 @@ std::vector<HashInfo> key_search(std::string salt, int keyCount, int extraHashCo
     }
 
     // sort them by hash index
+    //std::sort(keys.begin(), keys.end(), [](const HashInfo& h1, const HashInfo& h2) { return h1.hashIndex < h2.hashIndex; });
     std::sort(keys.begin(), keys.end());
     return keys;
 }
 
 HashInfo process_hash(std::string hash, int index) {
-    HashInfo result{index, hash};
+    HashInfo result{index};
 
     // scan the string, look for triples. if found, then look for
     // any groups of five
