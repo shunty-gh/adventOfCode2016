@@ -37,6 +37,25 @@
               "kind": "build",
               "isDefault": true
             }
+          },
+          {
+            "type": "shell",
+            "label": "clang++ build active file",
+            "command": "clang",
+            "args": [
+                "-std=c++17",
+                "-g",
+                "${file}",
+                "-o", "${fileDirname}/${fileBasenameNoExtension}.exe"
+            ],
+            "options": {
+              "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": ["$gcc"],
+            "group": {
+              "kind": "build",
+              "isDefault": true
+            }
           }
     ],
     "version": "2.0.0"
