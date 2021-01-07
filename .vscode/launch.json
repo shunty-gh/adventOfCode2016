@@ -6,7 +6,7 @@
     "configurations": [
 
         {
-            "name": "g++ build and debug active file",
+            "name": "g++ (Linux) build and debug active file",
             "type": "cppdbg",
             "request": "launch",
             "program": "${fileDirname}/${fileBasenameNoExtension}",
@@ -48,7 +48,7 @@
             "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": false,
-            "preLaunchTask": "clang++ build active file"
+            "preLaunchTask": "clang++ (Win) build active file"
         }
     ]
 }

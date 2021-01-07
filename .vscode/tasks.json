@@ -40,7 +40,7 @@
           },
           {
             "type": "shell",
-            "label": "clang++ build active file",
+            "label": "clang++ (Win) build active file",
             "command": "clang",
             "args": [
                 "-std=c++17",
