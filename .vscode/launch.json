@@ -4,18 +4,37 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+        {
+            // https://github.com/vadimcn/vscode-lldb/blob/v1.6.1/MANUAL.md
+            "name": "CLang (LLDB/Windows) Debug",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${fileDirname}/${fileBasenameNoExtension}.exe",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "clang++ (Win) build active file",
+          },
 
         {
-            "name": "g++ (Linux) build and debug active file",
+            "name": "g++.exe Debug",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${fileDirname}/${fileBasenameNoExtension}",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
+            "windows": {
+                "program": "${fileDirname}\\${fileBasenameNoExtension}.exe",
+                "miDebuggerPath": "gdb",
+                "miDebuggerArgs": "-q",
+            },
+            "linux": {
+                "program": "${fileDirname}/${fileBasenameNoExtension}",
+                "miDebuggerPath": "/usr/bin/gdb",
+                "miDebuggerArgs": "-q",
+            },
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",
@@ -24,10 +43,10 @@
                 }
             ],
             "preLaunchTask": "g++ build active file",
-            "miDebuggerPath": "/usr/bin/gdb"
         },
+
         {
-            "name": "cl.exe - Build and debug active file",
+            "name": "MSVC++ Debug",
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${fileDirname}\\${fileBasenameNoExtension}.exe",
@@ -36,19 +55,7 @@
             "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": false,
-            "preLaunchTask": "C/C++: cl.exe build active file"
-        },
-        {
-            "name": "clang (Windows) - Build and debug active file",
-            "type": "cppvsdbg",
-            "request": "launch",
-            "program": "${fileDirname}/${fileBasenameNoExtension}.exe",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [],
-            "externalConsole": false,
-            "preLaunchTask": "clang++ (Win) build active file"
+            "preLaunchTask": "MSVC++ build active file"
         }
     ]
 }
