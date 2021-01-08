@@ -1,0 +1,96 @@
+{
+	// Place your adventOfCode2016 workspace snippets here. Each snippet is defined under a snippet name and has a scope, prefix, body and
+	// description. Add comma separated ids of the languages where the snippet is applicable in the scope field. If scope
+	// is left empty or omitted, the snippet gets applied to all languages. The prefix is what is
+	// used to trigger the snippet and the body will be expanded and inserted. Possible variables are:
+	// $1, $2 for tab stops, $0 for the final cursor position, and ${1:label}, ${2:another} for placeholders.
+	// Placeholders with the same ids are connected.
+	// Example:
+	// "Print to console": {
+	// 	"scope": "javascript,typescript",
+	// 	"prefix": "log",
+	// 	"body": [
+	// 		"console.log('$1');",
+	// 		"$2"
+	// 	],
+	// 	"description": "Log output to console"
+	// }
+
+	"Print part 1": {
+		"prefix": "p1out",
+		"body": [
+			"std::cout << \"Part 1: \" << part1 << std::endl;"
+		]
+	},
+
+	"Print part 2": {
+		"prefix": "p2out",
+		"body": [
+			"std::cout << \"Part 2: \" << part2 << std::endl;"
+		]
+	},
+
+	"for i=0...size() loop": {
+		"prefix": "forisz",
+		"body": [
+			"for (int i = 0; i < ${1:var}.size(); i++) {",
+			"\t$0",
+			"}"
+		]
+	},
+
+	"for i=0... loop": {
+		"prefix": "fori",
+		"body": [
+			"for (int i = 0; i < ${1:var}; i++) {",
+			"\t$0",
+			"}"
+		]
+	},
+
+	"for j=0... loop": {
+		"prefix": "forj",
+		"body": [
+			"for (int j = 0; j < ${1:var}; j++) {",
+			"\t$0",
+			"}"
+		]
+	},
+
+	"for x..y loop": {
+		"prefix": "forxy",
+		"body": [
+			"for (int y = 0; y < ${1:varY}; y++) {",
+			"\tfor (int x = 0; x < ${2:varX}; x++) {",
+			"\t\t$0",
+			"\t}",
+			"}"
+		]
+	},
+
+	"vector": {
+		"prefix": "vec",
+		"body": [
+			"std::vector<${1:Type}> $0;"
+		]
+	},
+
+	"vector of vectors": {
+		"prefix": "vecv",
+		"body": [
+			"std::vector<std::vector<${1:Type}>> $0;"
+		]
+	},
+
+	"#define TEST": {
+		"prefix": "#test",
+		"body": [
+			"#define TEST",
+			"#ifdef TEST",
+			"\t$1",
+			"#else",
+			"\t$1",
+			"#endif"
+		]
+	}
+}
