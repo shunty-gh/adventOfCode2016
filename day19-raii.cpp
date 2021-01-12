@@ -1,20 +1,13 @@
 #include <iostream>
+#include <memory>
 
-// https://adventofcode.com/2016/day/20
-
-/* Linked list using 'new' and 'delete'
-   For a more RAII approach see ./day19-raii.cpp
-   For a far simpler method just using vector<int>
-   see ./day19-no-pointers.cpp
- */
+// https://adventofcode.com/2016/day/19
 
 const int Input = 3012210;
-//const int Input = 5;
-//const int Input = 10;
 
 struct Node {
     int Id;
-    Node *Next;
+    std::unique_ptr<Node> Next;
 
     Node() { Id = 0; Next = nullptr; }
     Node(int id) { Id = id; Next = nullptr; }
@@ -50,42 +43,29 @@ int main() {
        the circle, the one on the left (from the perspective of the
        stealer) is stolen from.")
     */
-    Node* n1 = new Node(1);
-    Node* tail = n1;
+
+    auto first = std::make_unique<Node>(Node{1});
+    auto head = first.get();
+    auto tail = first.get();
     Node* dp;
     for (int i = 2; i <= Input; i++) {
-        Node* nn = new Node(i);
+        tail->Next = std::make_unique<Node>(Node{i});
         if (i == (Input/2)) {
-            dp = nn;
+            dp = tail->Next.get();
         }
-        tail->Next = nn;
-        tail = nn;
+        tail = tail->Next.get();
     }
-    tail->Next = n1;
+    tail->Next = std::move(first);
 
-    // Because we have the 'delete pointer' we don't actually need to keep
-    // track of any notion of a 'current' element
     int n = Input;
     while (n > 1) {
-        // Remove element by advancing the ->Next pointer of dp
-        // Should really free the no-longer used memory - technically we can get
-        // away with it because the program terminates straight after this but
-        // I suppose we should be 'correct'.
-        Node* tmp = dp->Next;
-        // Point the dp to the new node, ie skip the one we're currently pointing at
-        dp->Next = dp->Next->Next;
-        // Clean up the removed node
-        tmp->Next = NULL;
-        delete tmp;
+        dp->Next = std::move(dp->Next->Next);
 
-        // Advance the delete pointer when we go from odd to even
         if (n%2 == 1) {
-            dp = dp->Next;
+            dp = dp->Next.get();
         }
-        // Reduce total count
         n--;
     }
-
     std::cout << "Part 2: " << dp->Id << std::endl;
-    delete dp; // For the sake of completeness. Otherwise, technically, we'd leak 16 whole bytes
+    dp->Next = nullptr; // Prevents a 16 byte leak. Totally not necessary in this case but just trying out [Valgrind](https://www.valgrind.org/)
 }
