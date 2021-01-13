@@ -4,6 +4,16 @@
 #include <string>
 #include <vector>
 
+// https://adventofcode.com/2016/day/23
+
+/* Takes about a minute or so to run when compiled with optimisation
+   or about 2+ minutes in the debugger. Could be speeded up by looking
+   at the instructions and determining what it does and working out that
+   it could all be replaced by a couple of multiplications and some
+   additions etc.
+   But that would take much longer than waiting 60s to get the answer.
+ */
+
 //#define TEST
 #ifdef TEST
     const std::string InputFile{"day23-input-test.txt"};
@@ -56,7 +66,7 @@ struct Command {
     int DestValue;
 };
 
-int run_code(std::vector<Command>&, int);
+int run_code(std::vector<Command>, int);
 
 int main() {
     std::fstream inputfile(InputFile, std::ios_base::in);
@@ -79,14 +89,14 @@ int main() {
         commands.push_back(Command{tokens[0], tokens[1], tokens[2], string_to_instruction(tokens[0]), sr, dr, sv, dv});
     }
 
-    int part1 = run_code(commands, SeedRegA);
+    auto part1 = run_code(commands, SeedRegA);
     std::cout << "Part 1: " << part1 << std::endl;
 
-    //int part2 = run_code(commands, 12);
-    //std::cout << "Part 2: " << part2 << std::endl;
+    auto part2 = run_code(commands, 12);
+    std::cout << "Part 2: " << part2 << std::endl;
 }
 
-int run_code(std::vector<Command>& commands, int regA) {
+int run_code(std::vector<Command> commands, int regA) {
     int ip = 0;
     int icount = commands.size();
     int registers[4]{0};
