@@ -92,5 +92,12 @@
 			"\t$1",
 			"#endif"
 		]
+	},
+
+	"include iostream": {
+		"prefix": "#ios",
+		"body": [
+			"#include <iostream>"
+		]
 	}
 }
